@@ -1,1 +1,1 @@
-# nicegui-extensions
+# NiceGUI Extensions
