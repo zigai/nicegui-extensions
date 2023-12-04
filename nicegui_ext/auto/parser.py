@@ -4,6 +4,7 @@ from functools import lru_cache
 
 from nicegui import ui
 from nicegui.element import Element
+from objinspect.util import is_literal
 from strto import get_parser
 
 from nicegui_ext.ui import DatePicker
@@ -16,6 +17,7 @@ INPUT_ELEMENTS = {
     list: ui.textarea,
     tuple: ui.textarea,
     datetime.date: DatePicker,
+    T.Literal: ui.select,
 }
 
 DEFAULT_VALUES = {
@@ -38,4 +40,6 @@ def element_for_type(t: T.Type) -> Element:
         for i in args:
             if i in INPUT_ELEMENTS:
                 return INPUT_ELEMENTS[i]
+    if is_literal(t):
+        return INPUT_ELEMENTS[T.Literal]
     raise ValueError(f"No input element for type {t}")

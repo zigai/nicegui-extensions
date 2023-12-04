@@ -3,10 +3,11 @@ import typing as T
 from nicegui import ui
 from nicegui.element import Element
 from objinspect import Class, Parameter
+from objinspect.util import get_literal_choices, is_literal
 
 from nicegui_ext.auto.auto_element import SINGLE_ROW, AutoElement
 from nicegui_ext.auto.parser import DEFAULT_VALUES, STR_PARSER, element_for_type
-from nicegui_ext.helpers import element_takes_label, err_message_missing_param, is_type
+from nicegui_ext.helpers import element_init_takes_label, err_message_missing_param, is_type
 from nicegui_ext.ui import notification, tooltip
 
 
@@ -23,10 +24,6 @@ class ClassElement(AutoElement):
         draggable: bool = False,
         expandable: bool = False,
         extras: list[Element] | None = None,
-        add_delete_button: bool = False,
-        add_default_button: bool = False,
-        add_clear_button: bool = False,
-        add_button_tooltips: bool = True,
         width_class: str = "w-fit-content",
     ) -> None:
         self.cls = cls
@@ -43,14 +40,12 @@ class ClassElement(AutoElement):
             icon=icon,
             icon_size=icon_size,
             draggable=draggable,
-            add_delete_button=add_delete_button,
-            add_default_button=add_default_button,
-            add_clear_button=add_clear_button,
-            add_button_tooltips=add_button_tooltips,
             width_class=width_class,
             expandable=expandable,
         )
         self._fill_elements_per_row()
+        with self.menu:
+            ui.menu_item("Reset to defaults", on_click=self.reset_to_defaults)
 
     def get_title(self) -> str | None:
         if isinstance(self._title_value, str):
@@ -115,7 +110,7 @@ class ClassElement(AutoElement):
     def add_input_element_for_param(self, param: Parameter) -> None:
         elem = element_for_type(param.type)
         kwargs = {}
-        if element_takes_label(elem):
+        if element_init_takes_label(elem):
             kwargs["label"] = self.format_label(param.name)
 
         # Experimental
@@ -125,9 +120,21 @@ class ClassElement(AutoElement):
             kwargs["value"] = param.default
 
         if param.type is bool:
-            kwargs["text"] = param.name.capitalize()
+            kwargs["text"] = self.format_label(param.name)
 
-        e: Element = elem(**kwargs)  # type: ignore
+        type_literal = is_literal(param.type)
+        if type_literal:
+            opts = list(get_literal_choices(param.type))
+            kwargs["options"] = opts
+            if "label" in kwargs:
+                del kwargs["label"]
+
+        if type_literal:
+            with ui.element().classes("items-center flex"):
+                ui.label(self.format_label(param.name) + ": ").classes("font-semibold mr-1.5")
+                e: Element = elem(**kwargs)  # type: ignore
+        else:
+            e: Element = elem(**kwargs)  # type: ignore
 
         if param.description:
             with e:
@@ -157,20 +164,6 @@ class ClassElement(AutoElement):
                 default_val = DEFAULT_VALUES.get(type(element), None)  # type:ignore
                 if default_val is not None:
                     element.value = default_val  # type:ignore
-
-    def create_reset_to_defaults_button(self) -> ui.button:
-        button = ui.button(icon="refresh", on_click=self.reset_to_defaults)
-        if self._add_button_tooltips:
-            with button:
-                tooltip("Reset")
-        return button
-
-    def _build_extra_buttons(self) -> None:
-        super()._build_extra_buttons()
-        with self:
-            if self._add_default_button:
-                with self.get_current_row():
-                    self.reset_to_defaults_button = self.create_reset_to_defaults_button()
 
     def build(self) -> None:
         init_method = self.obj.init_method

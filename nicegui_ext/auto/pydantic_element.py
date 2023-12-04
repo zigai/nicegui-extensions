@@ -51,11 +51,7 @@ class PydanticModelElement(ClassElement):
         elements_per_row: list[int] | None = None,
         draggable: bool = False,
         extras: list[Element] | None = None,
-        add_delete_button: bool = False,
-        add_default_button: bool = False,
         expandable: bool = False,
-        add_clear_button: bool = False,
-        add_button_tooltips: bool = True,
         width_class: str = "w-fit-content",
     ) -> None:
         super().__init__(
@@ -67,11 +63,7 @@ class PydanticModelElement(ClassElement):
             elements_per_row=elements_per_row,
             draggable=draggable,
             extras=extras,
-            add_delete_button=add_delete_button,
-            add_default_button=add_default_button,
-            add_clear_button=add_clear_button,
             expandable=expandable,
-            add_button_tooltips=add_button_tooltips,
             width_class=width_class,
         )
 

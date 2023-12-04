@@ -3,7 +3,7 @@ from functools import lru_cache
 
 from nicegui.element import Element
 from objinspect import Class, Parameter
-from objinspect.util import type_to_str
+from objinspect.util import get_literal_choices, is_pure_literal, type_to_str
 from stdl import dt, st
 
 
@@ -24,16 +24,28 @@ def clean_variable_name(name: str) -> str:
 
 
 def is_type(val: T.Any, t: T.Type) -> bool:
-    if T.get_origin(t) is None:
-        return type(val) is t
+    """
+    Note: not fully implemented. Only supports basic types.
+    """
+    if is_pure_literal(t):
+        return val in get_literal_choices(t)
+    origin = T.get_origin(t)
+    args = T.get_args(t)
+
+    if origin is None:
+        return isinstance(val, t)
+    elif origin is T.Union:
+        return any(is_type(val, arg) for arg in args)
     else:
-        origin = T.get_origin(t)
-        args = T.get_args(t)
-        return isinstance(val, origin) and all(isinstance(arg, type) for arg in args)
+        if not isinstance(val, origin):
+            return False
+        if args:
+            return all(is_type(val, arg) for arg in args)
+        return True
 
 
 @lru_cache()
-def element_takes_label(e: Element) -> bool:
+def element_init_takes_label(e: Element) -> bool:
     obj = Class(e)
     init_method = obj.init_method
     if not init_method:
