@@ -1,6 +1,6 @@
 [project]
 name = "nicegui-extensions"
-version = "0.0.3"
+version = "0.0.4"
 description = ""
 authors = [{ name = "Žiga Ivanšek", email = "ziga.ivansek@gmail.com" }]
 license = { file = "LICENSE" }
