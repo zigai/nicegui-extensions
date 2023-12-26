@@ -12,10 +12,9 @@ from stdl import fs
 
 from nicegui_ext import icons
 
-_TKINTER_ROOT = tk.Tk()  # For file dialogs
+_TKINTER_ROOT = tk.Tk()
 _TKINTER_ROOT.withdraw()
 
-# Filetypes for tkinter.filedialog
 ALL_FILES = ("All files", "*.*")
 TEXT_FILES = ("Text files", "*.txt")
 PYTHON_FILES = ("Python files", "*.py")
@@ -123,6 +122,7 @@ class NativeFilePickerElement(Element):
         open_at_last_dir: bool = True,
         add_file_exists_indicator: bool = True,
         width_class="w-80",
+        on_change_events: list[T.Callable] | None = None,
     ) -> None:
         super().__init__()
         self.file_dialog = NativeFileDialog(
@@ -133,7 +133,7 @@ class NativeFilePickerElement(Element):
             initial_directory=initial_directory,
             open_at_last_dir=open_at_last_dir,
         )
-
+        self.on_change_events = on_change_events or []
         self._add_file_exists_indicator = add_file_exists_indicator
         self.auto_complete = []
         self.filepath: str | None = None
@@ -142,7 +142,7 @@ class NativeFilePickerElement(Element):
                 ui.input(
                     placeholder="No file selected",
                     autocomplete=self.auto_complete,
-                    on_change=self.on_input_change,
+                    on_change=self._on_change,
                 )
                 .classes(width_class)
                 .classes("font-mono")
@@ -162,7 +162,7 @@ class NativeFilePickerElement(Element):
             self.path_input.set_autocomplete(self.auto_complete)
         return filename
 
-    def on_input_change(self):
+    def on_path_change(self):
         value = self.path_input.value
         if not value:
             if self._add_file_exists_indicator:
@@ -176,6 +176,11 @@ class NativeFilePickerElement(Element):
         else:
             if self._add_file_exists_indicator:
                 self.label_file_exists.text = "🔴"
+
+    def _on_change(self):
+        self.on_path_change()
+        for event in self.on_change_events:
+            event()
 
     @property
     def value(self):
